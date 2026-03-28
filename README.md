@@ -94,9 +94,38 @@ gymtracker/
         │   ├── TrainPage.jsx      # Daily workout logging
         │   ├── HistoryPage.jsx    # Past sessions
         │   └── ProgressPage.jsx   # Charts per exercise
+        │   └── RoutinePage.jsx    # Import/manage routine via CSV
         └── utils/
             ├── api.js             # Axios instance with JWT
-            └── workout.js         # Exercise/day definitions
+            └── workout.js         # Date helpers
+
+---
+
+## Routine Builder (CSV Import)
+
+Users can tailor their split from the **Routine** tab. Upload a CSV where each row is one exercise. Columns:
+
+| Column | Required | Description |
+|--------|----------|-------------|
+| `day_label` | ✅ | Short label shown in the day selector (e.g. `Day 1`). |
+| `day_name` | ✅ | Day title (e.g. `Push`). Used to generate stable IDs. |
+| `day_focus` | ⛔ | Optional blurb that appears under the title. |
+| `day_color` | ⛔ | Hex color (defaults to orange). |
+| `exercise_name` | ✅ | Exercise display name. |
+| `exercise_target` | ⛔ | Text such as `4x6-8` shown in the UI. |
+| `exercise_sets` | ⛔ | Number of sets (defaults to 3). |
+
+Example CSV:
+
+```
+day_label,day_name,day_focus,day_color,exercise_name,exercise_target,exercise_sets
+Day 1,Push,Strength,#FF6B00,Smith Machine Bench Press,4x6-8,4
+Day 1,Push,Strength,#FF6B00,Incline Dumbbell Press,3x8-10,3
+Day 2,Pull,Back + Arms,#3B82F6,Pull-Ups,4x8-10,4
+Day 2,Pull,Back + Arms,#3B82F6,Barbell Row,3x8-10,3
+```
+
+Routine imports are idempotent—you can re-upload new CSVs anytime without affecting existing logs (their day/exercise IDs remain stored with each entry). Prefer working visually? Open the **Routine** tab and use the inline editor to add/remove days and exercises, then hit “Save routine” to push straight to the API. Clearing the editor and saving gives you an empty routine, while the previous setup moves into the on-page history panel (backed by `/api/routine/history`) so you can restore it later without it counting as your current routine.
 ```
 
 ---
@@ -118,6 +147,14 @@ gymtracker/
 | GET | `/api/logs/stats/summary` | Weekly stats (sessions, sets, PRs) |
 | POST | `/api/logs` | Save/update sets for an exercise |
 | DELETE | `/api/logs/:id` | Delete a log entry |
+
+### Routine (all require `Authorization: Bearer <token>`)
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/routine` | Fetch the current routine for the user |
+| PUT | `/api/routine` | Replace the routine with JSON payload |
+| POST | `/api/routine/import` | Replace the routine by uploading CSV text |
+| GET | `/api/routine/history` | Retrieve the most recent routine snapshots |
 
 ---
 
@@ -155,7 +192,8 @@ app.get("*", (_, res) => res.sendFile(path.join(__dirname, "../client/dist/index
 ## Features
 
 - **Login / Register** with JWT auth (tokens valid 30 days)
-- **5-day split** pre-loaded: Push, Pull, Legs, Upper, Arms
+- **Routine builder** — import your own split via CSV anytime
+- **Sample 5-day split** provided via template (Push, Pull, Legs, Upper, Arms)
 - **Per-set logging** — weight (kg) + reps for every set
 - **Last session comparison** — see your previous numbers inline while logging
 - **PR detection** — automatic badge when you beat your best weight
