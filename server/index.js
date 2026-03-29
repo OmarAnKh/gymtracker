@@ -10,7 +10,27 @@ const routineRoutes = require("./routes/routine");
 const app = express();
 
 // ── Middleware ────────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  /\.pages\.dev$/,
+  /localhost/,
+  "https://gymtracker-5ef.pages.dev",
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      const isAllowed =
+        !origin ||
+        allowedOrigins.some((pattern) =>
+          typeof pattern === "string" ? pattern === origin : pattern.test(origin)
+        );
+
+      return isAllowed ? callback(null, true) : callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // ── Routes ────────────────────────────────────────────
